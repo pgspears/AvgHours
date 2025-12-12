@@ -1,0 +1,2828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Hours Analyzer | Accelerate Solutions</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a1628;
+            --bg-secondary: #111d32;
+            --bg-tertiary: #182942;
+            --bg-card: linear-gradient(145deg, #152238 0%, #0d1a2d 100%);
+            --accent-gold: #d4a853;
+            --accent-gold-light: #e8c378;
+            --accent-teal: #2dd4bf;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-rose: #f43f5e;
+            --accent-orange: #f97316;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(212, 168, 83, 0.15);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(212, 168, 83, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Animated background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(212, 168, 83, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(45, 212, 191, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.02) 0%, transparent 70%);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(212, 168, 83, 0.3);
+        }
+
+        .logo-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--bg-primary);
+        }
+
+        .logo-text h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Data Source Banner */
+        .data-source-banner {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .data-source-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .data-source-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .data-source-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-blue);
+        }
+
+        .data-source-text h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .data-source-text p {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-source-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--accent-blue);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .data-source-link:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .data-source-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+            color: var(--bg-primary);
+            box-shadow: 0 4px 15px rgba(212, 168, 83, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 168, 83, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-gold);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .btn-ghost:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Upload Area */
+        .upload-section {
+            margin-bottom: 2rem;
+        }
+
+        .upload-area {
+            background: var(--bg-card);
+            border: 2px dashed var(--border-color);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(212, 168, 83, 0.05) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: var(--accent-gold);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .upload-area:hover::before,
+        .upload-area.drag-over::before {
+            opacity: 1;
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, rgba(212, 168, 83, 0.1) 0%, rgba(212, 168, 83, 0.05) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon svg {
+            width: 36px;
+            height: 36px;
+            stroke: var(--accent-gold);
+        }
+
+        .upload-area h3 {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-area p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(45, 212, 191, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(45, 212, 191, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-info svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-teal);
+        }
+
+        .file-info .file-name {
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .file-info .file-size {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .controls-panel.show {
+            display: block;
+            animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9375rem;
+            transition: all 0.2s ease;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1);
+        }
+
+        .control-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+
+        .threshold-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .threshold-wrapper input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            border: none;
+            padding: 0;
+        }
+
+        .threshold-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(212, 168, 83, 0.4);
+        }
+
+        .threshold-value {
+            min-width: 60px;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent-gold);
+            font-size: 0.875rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid.show {
+            display: grid;
+            animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-subtle);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.gold::before {
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-light));
+        }
+
+        .stat-card.teal::before {
+            background: linear-gradient(90deg, var(--accent-teal), #5eead4);
+        }
+
+        .stat-card.blue::before {
+            background: linear-gradient(90deg, var(--accent-blue), #60a5fa);
+        }
+
+        .stat-card.purple::before {
+            background: linear-gradient(90deg, var(--accent-purple), #a78bfa);
+        }
+
+        .stat-card.rose::before {
+            background: linear-gradient(90deg, var(--accent-rose), #fb7185);
+        }
+
+        .stat-card.orange::before {
+            background: linear-gradient(90deg, var(--accent-orange), #fb923c);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .stat-subtext {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Chart Section */
+        .chart-section {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .chart-section.show {
+            display: block;
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-tab:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .chart-tab.active {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
+        .chart-container {
+            height: 350px;
+            position: relative;
+        }
+
+        /* Results Table */
+        .results-section {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .results-section.show {
+            display: block;
+            animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9375rem;
+        }
+
+        thead {
+            background: var(--bg-tertiary);
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.6875rem;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            color: var(--accent-gold);
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            color: var(--accent-gold);
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            color: var(--accent-gold);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(212, 168, 83, 0.03);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .provider-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .provider-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8125rem;
+            color: var(--bg-primary);
+        }
+
+        .hours-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .hours-badge.high {
+            background: rgba(45, 212, 191, 0.15);
+            color: var(--accent-teal);
+        }
+
+        .hours-badge.medium {
+            background: rgba(212, 168, 83, 0.15);
+            color: var(--accent-gold);
+        }
+
+        .hours-badge.low {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--accent-purple);
+        }
+
+        .hours-badge.very-low {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-rose);
+        }
+
+        .correction-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        .trend.up {
+            color: var(--accent-teal);
+        }
+
+        .trend.down {
+            color: var(--accent-rose);
+        }
+
+        .trend.stable {
+            color: var(--text-muted);
+        }
+
+        .trend svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Provider Detail Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 22, 40, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg), 0 0 60px rgba(212, 168, 83, 0.1);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-back {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-back.show {
+            display: flex;
+        }
+
+        .modal-back:hover {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--accent-rose);
+            border-color: var(--accent-rose);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 80px);
+        }
+
+        .modal-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .modal-stat {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .modal-stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .modal-stat-value.correction {
+            color: var(--accent-orange);
+        }
+
+        .modal-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .modal-chart {
+            height: 250px;
+            margin-bottom: 2rem;
+        }
+
+        .modal-weeks-table {
+            width: 100%;
+        }
+
+        .modal-weeks-table th {
+            cursor: default;
+        }
+
+        .week-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .week-row:hover {
+            background: rgba(212, 168, 83, 0.08) !important;
+        }
+
+        .week-row td:last-child {
+            text-align: right;
+        }
+
+        .drill-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: rgba(212, 168, 83, 0.1);
+            color: var(--accent-gold);
+            transition: all 0.2s ease;
+        }
+
+        .week-row:hover .drill-icon {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
+        .drill-icon svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Week Detail View */
+        .week-detail-view {
+            display: none;
+        }
+
+        .week-detail-view.show {
+            display: block;
+        }
+
+        .provider-overview {
+            display: block;
+        }
+
+        .provider-overview.hidden {
+            display: none;
+        }
+
+        .records-table {
+            font-size: 0.8125rem;
+        }
+
+        .records-table th {
+            font-size: 0.625rem;
+            padding: 0.75rem 0.5rem;
+        }
+
+        .records-table td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .correction-row {
+            background: rgba(249, 115, 22, 0.05);
+        }
+
+        .correction-row td {
+            color: var(--accent-orange);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            stroke: var(--text-muted);
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 2rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-brand svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent-gold);
+        }
+
+        .footer-brand span {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .footer-copyright {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--accent-teal);
+        }
+
+        .toast.error {
+            border-left: 3px solid var(--accent-rose);
+        }
+
+        .toast.info {
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .data-source-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .table-wrapper {
+                font-size: 0.8125rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .bg-pattern,
+            .upload-section,
+            .controls-panel,
+            .chart-section,
+            .header-actions,
+            .data-source-banner,
+            footer {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+                color: black;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .results-section {
+                background: white;
+                border: none;
+                box-shadow: none;
+            }
+
+            table {
+                border: 1px solid #ddd;
+            }
+
+            th, td {
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span>Analytics Dashboard</span>
+                    <h1>Provider Hours Analyzer</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-ghost" id="resetBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+                <button class="btn btn-secondary" id="exportBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export Excel
+                </button>
+            </div>
+        </header>
+
+        <!-- Data Source Banner -->
+        <div class="data-source-banner">
+            <div class="data-source-info">
+                <div class="data-source-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                </div>
+                <div class="data-source-text">
+                    <h3>Data Source</h3>
+                    <p>Focus — Billing by Service Date Range</p>
+                </div>
+            </div>
+            <a href="https://tis.focuscbmapp.com/reports/datageniereport?id=901d9d41-94a7-4ff9-9df0-5aede6a917dd&name=Billing%20by%20Service%20Date%20Range" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="data-source-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Open Report in Focus
+            </a>
+        </div>
+
+        <section class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <h3>Drop your Excel file here</h3>
+                <p>or click to browse • Export from Focus report above</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+                <div class="file-info" id="fileInfo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span class="file-name" id="fileName"></span>
+                    <span class="file-size" id="fileSize"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Processing data...</span>
+        </div>
+
+        <section class="controls-panel" id="controlsPanel">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>Hours Threshold (Minimum)</label>
+                    <div class="threshold-wrapper">
+                        <input type="range" id="thresholdSlider" min="0" max="60" value="0" step="1">
+                        <div class="threshold-value" id="thresholdValue">0h</div>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Date Range - Start</label>
+                    <input type="date" id="dateStart">
+                </div>
+                <div class="control-group">
+                    <label>Date Range - End</label>
+                    <input type="date" id="dateEnd">
+                </div>
+                <div class="control-group">
+                    <label>Sort By</label>
+                    <select id="sortSelect">
+                        <option value="maxHours-desc">Max Weekly Hours (High to Low)</option>
+                        <option value="maxHours-asc">Max Weekly Hours (Low to High)</option>
+                        <option value="totalHours-desc">Total Hours (High to Low)</option>
+                        <option value="totalHours-asc">Total Hours (Low to High)</option>
+                        <option value="name-asc">Provider Name (A-Z)</option>
+                        <option value="name-desc">Provider Name (Z-A)</option>
+                        <option value="avgHours-desc">Avg Weekly Hours (High to Low)</option>
+                        <option value="correctionHours-desc">Correction Hours (High to Low)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card gold">
+                <div class="stat-label">Total Providers</div>
+                <div class="stat-value" id="statProviders">0</div>
+                <div class="stat-subtext" id="statProvidersFiltered">Showing all</div>
+            </div>
+            <div class="stat-card teal">
+                <div class="stat-label">Total Hours</div>
+                <div class="stat-value" id="statTotalHours">0</div>
+                <div class="stat-subtext" id="statTotalHoursSub">Across all providers</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-label">Average Weekly Hours</div>
+                <div class="stat-value" id="statAvgHours">0</div>
+                <div class="stat-subtext" id="statAvgHoursSub">Per provider</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-label">Weeks Analyzed</div>
+                <div class="stat-value" id="statWeeks">0</div>
+                <div class="stat-subtext" id="statDateRange">-</div>
+            </div>
+            <div class="stat-card rose">
+                <div class="stat-label">Peak Hours</div>
+                <div class="stat-value" id="statPeakHours">0</div>
+                <div class="stat-subtext" id="statPeakProvider">-</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-label">Correction Hours</div>
+                <div class="stat-value" id="statCorrectionHours">0</div>
+                <div class="stat-subtext" id="statCorrectionSub">Total corrections</div>
+            </div>
+        </div>
+
+        <section class="chart-section" id="chartSection">
+            <div class="section-header">
+                <h2 class="section-title">Hours Distribution</h2>
+                <div class="chart-tabs">
+                    <button class="chart-tab active" data-view="providers">By Provider</button>
+                    <button class="chart-tab" data-view="weeks">By Week</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </section>
+
+        <section class="results-section" id="resultsSection">
+            <div class="section-header">
+                <h2 class="section-title">Provider Analysis</h2>
+                <div class="table-controls">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search providers...">
+                    </div>
+                    <button class="btn btn-ghost" id="printBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"/>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                            <rect x="6" y="14" width="12" height="8"/>
+                        </svg>
+                        Print
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="name">Provider</th>
+                            <th data-sort="totalHours">Total Hours</th>
+                            <th data-sort="avgHours">Avg Weekly</th>
+                            <th data-sort="maxHours">Max Weekly</th>
+                            <th data-sort="minHours">Min Weekly</th>
+                            <th data-sort="correctionHours">Corrections</th>
+                            <th data-sort="weeksActive">Weeks Active</th>
+                            <th data-sort="trend">Trend</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <h3>No providers match your criteria</h3>
+                <p>Try adjusting the threshold or date filters</p>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-brand">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span>Accelerate Solutions, LLC</span>
+            </div>
+            <p class="footer-copyright">© 2025 Accelerate Solutions, LLC. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Provider Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <button class="modal-back" id="modalBack">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                    </button>
+                    <div>
+                        <h2 class="modal-title" id="modalTitle">Provider Details</h2>
+                        <p class="modal-subtitle" id="modalSubtitle"></p>
+                    </div>
+                </div>
+                <button class="modal-close" id="modalClose">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Provider Overview (default view) -->
+                <div class="provider-overview" id="providerOverview">
+                    <div class="modal-stats" id="modalStats">
+                    </div>
+                    <div class="modal-chart">
+                        <canvas id="modalChart"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="modal-weeks-table">
+                            <thead>
+                                <tr>
+                                    <th>Week</th>
+                                    <th>Date Range</th>
+                                    <th>Hours</th>
+                                    <th>Units</th>
+                                    <th>Sessions</th>
+                                    <th>Corrections</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalWeeksBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Week Detail View (drill-down) -->
+                <div class="week-detail-view" id="weekDetailView">
+                    <div class="modal-stats" id="weekDetailStats">
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Begin Time</th>
+                                    <th>End Time</th>
+                                    <th>Units</th>
+                                    <th>Hours</th>
+                                    <th>Proc Code</th>
+                                    <th>Funding Source</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weekDetailBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Application State
+        const state = {
+            rawData: [],
+            processedData: [],
+            filteredData: [],
+            weeks: [],
+            providers: new Map(),
+            currentSort: { field: 'maxHours', direction: 'desc' },
+            threshold: 0,
+            dateStart: null,
+            dateEnd: null,
+            searchTerm: '',
+            chartView: 'providers',
+            mainChart: null,
+            modalChart: null,
+            currentProvider: null,
+            currentWeek: null,
+            columnMap: {}
+        };
+
+        // DOM Elements
+        const elements = {
+            uploadArea: document.getElementById('uploadArea'),
+            fileInput: document.getElementById('fileInput'),
+            fileInfo: document.getElementById('fileInfo'),
+            fileName: document.getElementById('fileName'),
+            fileSize: document.getElementById('fileSize'),
+            loading: document.getElementById('loading'),
+            controlsPanel: document.getElementById('controlsPanel'),
+            statsGrid: document.getElementById('statsGrid'),
+            chartSection: document.getElementById('chartSection'),
+            resultsSection: document.getElementById('resultsSection'),
+            resultsBody: document.getElementById('resultsBody'),
+            emptyState: document.getElementById('emptyState'),
+            thresholdSlider: document.getElementById('thresholdSlider'),
+            thresholdValue: document.getElementById('thresholdValue'),
+            dateStart: document.getElementById('dateStart'),
+            dateEnd: document.getElementById('dateEnd'),
+            sortSelect: document.getElementById('sortSelect'),
+            searchInput: document.getElementById('searchInput'),
+            exportBtn: document.getElementById('exportBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            printBtn: document.getElementById('printBtn'),
+            modalOverlay: document.getElementById('modalOverlay'),
+            modalTitle: document.getElementById('modalTitle'),
+            modalSubtitle: document.getElementById('modalSubtitle'),
+            modalStats: document.getElementById('modalStats'),
+            modalWeeksBody: document.getElementById('modalWeeksBody'),
+            modalClose: document.getElementById('modalClose'),
+            modalBack: document.getElementById('modalBack'),
+            providerOverview: document.getElementById('providerOverview'),
+            weekDetailView: document.getElementById('weekDetailView'),
+            weekDetailStats: document.getElementById('weekDetailStats'),
+            weekDetailBody: document.getElementById('weekDetailBody'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // Utility Functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatHours(hours) {
+            return hours.toFixed(1) + 'h';
+        }
+
+        function parseDate(dateValue) {
+            if (!dateValue) return null;
+            
+            // Handle Excel serial date
+            if (typeof dateValue === 'number') {
+                const excelEpoch = new Date(1899, 11, 30);
+                const date = new Date(excelEpoch.getTime() + dateValue * 86400000);
+                return date;
+            }
+            
+            // Handle string date
+            if (typeof dateValue === 'string') {
+                // Try various formats
+                const formats = [
+                    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,  // M/D/YYYY
+                    /^(\d{4})-(\d{2})-(\d{2})$/,        // YYYY-MM-DD
+                    /^(\d{1,2})-(\d{1,2})-(\d{4})$/     // M-D-YYYY
+                ];
+                
+                for (const format of formats) {
+                    const match = dateValue.match(format);
+                    if (match) {
+                        if (format === formats[1]) {
+                            return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+                        } else {
+                            return new Date(parseInt(match[3]), parseInt(match[1]) - 1, parseInt(match[2]));
+                        }
+                    }
+                }
+                
+                // Try native parsing
+                const parsed = new Date(dateValue);
+                if (!isNaN(parsed.getTime())) return parsed;
+            }
+            
+            return null;
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay(); // 0 = Sunday
+            const diff = d.getDate() - day; // Go back to Sunday
+            return new Date(d.setDate(diff));
+        }
+
+        function getWeekEnd(weekStart) {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() + 6); // Saturday
+            return d;
+        }
+
+        function formatWeekRange(weekStart) {
+            const weekEnd = getWeekEnd(weekStart);
+            const options = { month: 'short', day: 'numeric' };
+            return `${weekStart.toLocaleDateString('en-US', options)} - ${weekEnd.toLocaleDateString('en-US', options)}`;
+        }
+
+        function formatWeekKey(date) {
+            const weekStart = getWeekStart(date);
+            return weekStart.toISOString().split('T')[0];
+        }
+
+        function getInitials(name) {
+            if (!name) return '??';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function getHoursBadgeClass(hours) {
+            if (hours >= 35) return 'high';
+            if (hours >= 25) return 'medium';
+            if (hours >= 15) return 'low';
+            return 'very-low';
+        }
+
+        function isCorrection(title) {
+            if (!title) return false;
+            return title.toLowerCase().includes('correction');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${type === 'success' ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' :
+                      type === 'error' ? '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' :
+                      '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'}
+                </svg>
+                <span>${message}</span>
+            `;
+            elements.toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Data Processing
+        function processFile(file) {
+            elements.loading.classList.add('show');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { raw: false, defval: '' });
+                    
+                    if (jsonData.length === 0) {
+                        throw new Error('No data found in the file');
+                    }
+                    
+                    state.rawData = jsonData;
+                    processData();
+                    
+                    elements.loading.classList.remove('show');
+                    elements.controlsPanel.classList.add('show');
+                    elements.statsGrid.classList.add('show');
+                    elements.chartSection.classList.add('show');
+                    elements.resultsSection.classList.add('show');
+                    elements.exportBtn.disabled = false;
+                    elements.resetBtn.disabled = false;
+                    
+                    showToast(`Loaded ${jsonData.length} records successfully`, 'success');
+                } catch (error) {
+                    elements.loading.classList.remove('show');
+                    showToast('Error processing file: ' + error.message, 'error');
+                    console.error(error);
+                }
+            };
+            
+            reader.onerror = function() {
+                elements.loading.classList.remove('show');
+                showToast('Error reading file', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processData() {
+            state.providers.clear();
+            state.weeks = [];
+            
+            const weekSet = new Set();
+            
+            // Find the correct column names (case-insensitive)
+            const findColumn = (row, possibleNames) => {
+                for (const key of Object.keys(row)) {
+                    const lowerKey = key.toLowerCase().trim();
+                    for (const name of possibleNames) {
+                        if (lowerKey === name.toLowerCase() || lowerKey.includes(name.toLowerCase())) {
+                            return key;
+                        }
+                    }
+                }
+                return null;
+            };
+            
+            // Get column names from first row
+            const sampleRow = state.rawData[0];
+            const dateCol = findColumn(sampleRow, ['Begin Date', 'BeginDate', 'Date', 'Service Date']);
+            const unitsCol = findColumn(sampleRow, ['Total Units', 'TotalUnits', 'Units']);
+            const providerCol = findColumn(sampleRow, ['Created By', 'CreatedBy', 'Provider', 'Staff']);
+            const titleCol = findColumn(sampleRow, ['title', 'Title']);
+            const beginTimeCol = findColumn(sampleRow, ['Begin Time', 'BeginTime']);
+            const endTimeCol = findColumn(sampleRow, ['End Time', 'EndTime']);
+            const procCodeCol = findColumn(sampleRow, ['ProcCode', 'Proc Code', 'Procedure Code']);
+            const fundingSourceCol = findColumn(sampleRow, ['Funding Source', 'FundingSource']);
+            
+            // Store column map for later use
+            state.columnMap = {
+                date: dateCol,
+                units: unitsCol,
+                provider: providerCol,
+                title: titleCol,
+                beginTime: beginTimeCol,
+                endTime: endTimeCol,
+                procCode: procCodeCol,
+                fundingSource: fundingSourceCol
+            };
+            
+            if (!dateCol || !unitsCol || !providerCol) {
+                showToast('Could not find required columns. Need: Begin Date, Total Units, Created By', 'error');
+                return;
+            }
+            
+            // Process each record
+            state.rawData.forEach((row, index) => {
+                const dateValue = row[dateCol];
+                const units = parseFloat(row[unitsCol]) || 0;
+                const provider = (row[providerCol] || '').toString().trim();
+                const title = titleCol ? (row[titleCol] || '').toString() : '';
+                
+                if (!provider || !dateValue) return;
+                
+                const date = parseDate(dateValue);
+                if (!date || isNaN(date.getTime())) return;
+                
+                const weekKey = formatWeekKey(date);
+                const hours = units * 0.25; // 15 minutes per unit
+                const isCorrectionRecord = isCorrection(title);
+                
+                weekSet.add(weekKey);
+                
+                if (!state.providers.has(provider)) {
+                    state.providers.set(provider, {
+                        name: provider,
+                        weeks: new Map(),
+                        totalHours: 0,
+                        totalUnits: 0,
+                        sessions: 0,
+                        correctionHours: 0,
+                        correctionUnits: 0,
+                        records: []
+                    });
+                }
+                
+                const providerData = state.providers.get(provider);
+                
+                if (!providerData.weeks.has(weekKey)) {
+                    providerData.weeks.set(weekKey, {
+                        hours: 0,
+                        units: 0,
+                        sessions: 0,
+                        correctionHours: 0,
+                        correctionUnits: 0,
+                        weekStart: getWeekStart(date),
+                        records: []
+                    });
+                }
+                
+                const weekData = providerData.weeks.get(weekKey);
+                weekData.hours += hours;
+                weekData.units += units;
+                weekData.sessions += 1;
+                
+                if (isCorrectionRecord) {
+                    weekData.correctionHours += hours;
+                    weekData.correctionUnits += units;
+                    providerData.correctionHours += hours;
+                    providerData.correctionUnits += units;
+                }
+                
+                // Store the record for drill-down
+                weekData.records.push({
+                    ...row,
+                    _index: index,
+                    _date: date,
+                    _hours: hours,
+                    _units: units,
+                    _isCorrection: isCorrectionRecord
+                });
+                
+                providerData.totalHours += hours;
+                providerData.totalUnits += units;
+                providerData.sessions += 1;
+                providerData.records.push({
+                    ...row,
+                    _index: index,
+                    _date: date,
+                    _hours: hours,
+                    _units: units,
+                    _isCorrection: isCorrectionRecord,
+                    _weekKey: weekKey
+                });
+            });
+            
+            // Sort weeks chronologically
+            state.weeks = Array.from(weekSet).sort();
+            
+            // Calculate provider statistics
+            state.processedData = Array.from(state.providers.values()).map(provider => {
+                const weekHours = Array.from(provider.weeks.values()).map(w => w.hours);
+                const maxHours = Math.max(...weekHours, 0);
+                const minHours = Math.min(...weekHours, 0);
+                const avgHours = weekHours.length > 0 ? weekHours.reduce((a, b) => a + b, 0) / weekHours.length : 0;
+                
+                // Calculate trend (compare last 2 weeks if available)
+                const sortedWeeks = Array.from(provider.weeks.entries())
+                    .sort((a, b) => a[0].localeCompare(b[0]));
+                
+                let trend = 'stable';
+                let trendValue = 0;
+                
+                if (sortedWeeks.length >= 2) {
+                    const lastWeek = sortedWeeks[sortedWeeks.length - 1][1].hours;
+                    const prevWeek = sortedWeeks[sortedWeeks.length - 2][1].hours;
+                    trendValue = lastWeek - prevWeek;
+                    if (trendValue > 2) trend = 'up';
+                    else if (trendValue < -2) trend = 'down';
+                }
+                
+                return {
+                    ...provider,
+                    maxHours,
+                    minHours,
+                    avgHours,
+                    weeksActive: provider.weeks.size,
+                    trend,
+                    trendValue
+                };
+            });
+            
+            // Set date range for filters
+            if (state.weeks.length > 0) {
+                const minDate = new Date(state.weeks[0]);
+                const maxDate = getWeekEnd(new Date(state.weeks[state.weeks.length - 1]));
+                elements.dateStart.value = minDate.toISOString().split('T')[0];
+                elements.dateEnd.value = maxDate.toISOString().split('T')[0];
+                state.dateStart = minDate;
+                state.dateEnd = maxDate;
+            }
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let filtered = [...state.processedData];
+            
+            // Apply threshold filter
+            if (state.threshold > 0) {
+                filtered = filtered.filter(p => p.maxHours >= state.threshold);
+            }
+            
+            // Apply date filter
+            if (state.dateStart && state.dateEnd) {
+                filtered = filtered.map(provider => {
+                    const filteredWeeks = new Map();
+                    let totalHours = 0;
+                    let totalUnits = 0;
+                    let sessions = 0;
+                    let correctionHours = 0;
+                    let correctionUnits = 0;
+                    
+                    provider.weeks.forEach((weekData, weekKey) => {
+                        const weekStart = new Date(weekKey);
+                        const weekEnd = getWeekEnd(weekStart);
+                        
+                        if (weekStart >= state.dateStart && weekEnd <= state.dateEnd) {
+                            filteredWeeks.set(weekKey, weekData);
+                            totalHours += weekData.hours;
+                            totalUnits += weekData.units;
+                            sessions += weekData.sessions;
+                            correctionHours += weekData.correctionHours;
+                            correctionUnits += weekData.correctionUnits;
+                        }
+                    });
+                    
+                    const weekHours = Array.from(filteredWeeks.values()).map(w => w.hours);
+                    
+                    return {
+                        ...provider,
+                        weeks: filteredWeeks,
+                        totalHours,
+                        totalUnits,
+                        sessions,
+                        correctionHours,
+                        correctionUnits,
+                        maxHours: weekHours.length > 0 ? Math.max(...weekHours) : 0,
+                        minHours: weekHours.length > 0 ? Math.min(...weekHours) : 0,
+                        avgHours: weekHours.length > 0 ? weekHours.reduce((a, b) => a + b, 0) / weekHours.length : 0,
+                        weeksActive: filteredWeeks.size
+                    };
+                }).filter(p => p.weeksActive > 0);
+                
+                // Re-apply threshold after date filter
+                if (state.threshold > 0) {
+                    filtered = filtered.filter(p => p.maxHours >= state.threshold);
+                }
+            }
+            
+            // Apply search filter
+            if (state.searchTerm) {
+                const term = state.searchTerm.toLowerCase();
+                filtered = filtered.filter(p => p.name.toLowerCase().includes(term));
+            }
+            
+            // Apply sorting
+            const [field, direction] = state.currentSort.field ? 
+                [state.currentSort.field, state.currentSort.direction] :
+                elements.sortSelect.value.split('-');
+            
+            filtered.sort((a, b) => {
+                let aVal = a[field];
+                let bVal = b[field];
+                
+                if (field === 'name') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+                
+                if (direction === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            state.filteredData = filtered;
+            
+            updateStats();
+            updateChart();
+            updateTable();
+        }
+
+        function updateStats() {
+            const totalProviders = state.processedData.length;
+            const filteredProviders = state.filteredData.length;
+            const totalHours = state.filteredData.reduce((sum, p) => sum + p.totalHours, 0);
+            const totalCorrectionHours = state.filteredData.reduce((sum, p) => sum + p.correctionHours, 0);
+            const avgWeeklyHours = state.filteredData.length > 0 ?
+                state.filteredData.reduce((sum, p) => sum + p.avgHours, 0) / state.filteredData.length : 0;
+            
+            // Find peak
+            let peakHours = 0;
+            let peakProvider = '-';
+            state.filteredData.forEach(p => {
+                if (p.maxHours > peakHours) {
+                    peakHours = p.maxHours;
+                    peakProvider = p.name;
+                }
+            });
+            
+            // Calculate filtered weeks
+            const filteredWeeks = new Set();
+            state.filteredData.forEach(p => {
+                p.weeks.forEach((_, weekKey) => filteredWeeks.add(weekKey));
+            });
+            
+            document.getElementById('statProviders').textContent = filteredProviders;
+            document.getElementById('statProvidersFiltered').textContent = 
+                filteredProviders < totalProviders ? `${filteredProviders} of ${totalProviders} shown` : 'Showing all';
+            
+            document.getElementById('statTotalHours').textContent = formatHours(totalHours);
+            document.getElementById('statTotalHoursSub').textContent = `Across ${filteredProviders} providers`;
+            
+            document.getElementById('statAvgHours').textContent = formatHours(avgWeeklyHours);
+            document.getElementById('statAvgHoursSub').textContent = 'Per provider per week';
+            
+            document.getElementById('statWeeks').textContent = filteredWeeks.size;
+            if (state.weeks.length > 0) {
+                const sortedFilteredWeeks = Array.from(filteredWeeks).sort();
+                if (sortedFilteredWeeks.length > 0) {
+                    const startDate = new Date(sortedFilteredWeeks[0]);
+                    const endDate = getWeekEnd(new Date(sortedFilteredWeeks[sortedFilteredWeeks.length - 1]));
+                    document.getElementById('statDateRange').textContent = 
+                        `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                }
+            }
+            
+            document.getElementById('statPeakHours').textContent = formatHours(peakHours);
+            document.getElementById('statPeakProvider').textContent = peakProvider.length > 20 ? 
+                peakProvider.substring(0, 20) + '...' : peakProvider;
+            
+            document.getElementById('statCorrectionHours').textContent = formatHours(totalCorrectionHours);
+            document.getElementById('statCorrectionSub').textContent = `${((totalCorrectionHours / totalHours) * 100 || 0).toFixed(1)}% of total`;
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (state.mainChart) {
+                state.mainChart.destroy();
+            }
+            
+            let chartData, chartOptions;
+            
+            if (state.chartView === 'providers') {
+                // Top 15 providers by max hours
+                const topProviders = [...state.filteredData]
+                    .sort((a, b) => b.maxHours - a.maxHours)
+                    .slice(0, 15);
+                
+                chartData = {
+                    labels: topProviders.map(p => p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name),
+                    datasets: [
+                        {
+                            label: 'Max Weekly Hours',
+                            data: topProviders.map(p => p.maxHours),
+                            backgroundColor: 'rgba(212, 168, 83, 0.8)',
+                            borderColor: 'rgb(212, 168, 83)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Avg Weekly Hours',
+                            data: topProviders.map(p => p.avgHours),
+                            backgroundColor: 'rgba(45, 212, 191, 0.6)',
+                            borderColor: 'rgb(45, 212, 191)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Correction Hours',
+                            data: topProviders.map(p => p.correctionHours),
+                            backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                            borderColor: 'rgb(249, 115, 22)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                };
+                
+                chartOptions = {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'DM Sans' }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b' },
+                            title: {
+                                display: true,
+                                text: 'Hours',
+                                color: '#64748b'
+                            }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    }
+                };
+            } else {
+                // Hours by week
+                const weeklyTotals = new Map();
+                const sortedWeeks = Array.from(new Set(
+                    state.filteredData.flatMap(p => Array.from(p.weeks.keys()))
+                )).sort();
+                
+                sortedWeeks.forEach(weekKey => {
+                    let total = 0;
+                    let corrections = 0;
+                    state.filteredData.forEach(p => {
+                        if (p.weeks.has(weekKey)) {
+                            total += p.weeks.get(weekKey).hours;
+                            corrections += p.weeks.get(weekKey).correctionHours;
+                        }
+                    });
+                    weeklyTotals.set(weekKey, { total, corrections });
+                });
+                
+                chartData = {
+                    labels: sortedWeeks.map(w => {
+                        const date = new Date(w);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [
+                        {
+                            label: 'Total Hours',
+                            data: sortedWeeks.map(w => weeklyTotals.get(w).total),
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Correction Hours',
+                            data: sortedWeeks.map(w => weeklyTotals.get(w).corrections),
+                            backgroundColor: 'rgba(249, 115, 22, 0.4)',
+                            borderColor: 'rgb(249, 115, 22)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                };
+                
+                chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'DM Sans' }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b', maxRotation: 45 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b' },
+                            title: {
+                                display: true,
+                                text: 'Hours',
+                                color: '#64748b'
+                            }
+                        }
+                    }
+                };
+            }
+            
+            state.mainChart = new Chart(ctx, {
+                type: state.chartView === 'providers' ? 'bar' : 'line',
+                data: chartData,
+                options: chartOptions
+            });
+        }
+
+        function updateTable() {
+            const tbody = elements.resultsBody;
+            tbody.innerHTML = '';
+            
+            if (state.filteredData.length === 0) {
+                elements.emptyState.style.display = 'block';
+                return;
+            }
+            
+            elements.emptyState.style.display = 'none';
+            
+            state.filteredData.forEach(provider => {
+                const row = document.createElement('tr');
+                
+                const trendIcon = provider.trend === 'up' ? 
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' :
+                    provider.trend === 'down' ?
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>' :
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+                
+                const correctionDisplay = provider.correctionHours > 0 
+                    ? `<span class="correction-badge">${formatHours(provider.correctionHours)}</span>`
+                    : '<span style="color: var(--text-muted)">—</span>';
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="provider-name">
+                            <div class="provider-avatar">${getInitials(provider.name)}</div>
+                            <span>${provider.name}</span>
+                        </div>
+                    </td>
+                    <td>${formatHours(provider.totalHours)}</td>
+                    <td>${formatHours(provider.avgHours)}</td>
+                    <td>
+                        <span class="hours-badge ${getHoursBadgeClass(provider.maxHours)}">
+                            ${formatHours(provider.maxHours)}
+                        </span>
+                    </td>
+                    <td>${formatHours(provider.minHours)}</td>
+                    <td>${correctionDisplay}</td>
+                    <td>${provider.weeksActive}</td>
+                    <td>
+                        <span class="trend ${provider.trend}">
+                            ${trendIcon}
+                            ${provider.trendValue !== 0 ? (provider.trendValue > 0 ? '+' : '') + provider.trendValue.toFixed(1) + 'h' : '—'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost" onclick="showProviderModal('${provider.name.replace(/'/g, "\\'")}')">
+                            View
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function showProviderModal(providerName) {
+            const provider = state.filteredData.find(p => p.name === providerName);
+            if (!provider) return;
+            
+            state.currentProvider = provider;
+            state.currentWeek = null;
+            
+            elements.modalTitle.textContent = provider.name;
+            elements.modalSubtitle.textContent = '';
+            elements.modalBack.classList.remove('show');
+            elements.providerOverview.classList.remove('hidden');
+            elements.weekDetailView.classList.remove('show');
+            
+            // Update modal stats
+            elements.modalStats.innerHTML = `
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${formatHours(provider.totalHours)}</div>
+                    <div class="modal-stat-label">Total Hours</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${formatHours(provider.avgHours)}</div>
+                    <div class="modal-stat-label">Avg Weekly</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${formatHours(provider.maxHours)}</div>
+                    <div class="modal-stat-label">Max Weekly</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${provider.weeksActive}</div>
+                    <div class="modal-stat-label">Weeks Active</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value correction">${formatHours(provider.correctionHours)}</div>
+                    <div class="modal-stat-label">Corrections</div>
+                </div>
+            `;
+            
+            // Update modal chart
+            const ctx = document.getElementById('modalChart').getContext('2d');
+            
+            if (state.modalChart) {
+                state.modalChart.destroy();
+            }
+            
+            const sortedWeeks = Array.from(provider.weeks.entries())
+                .sort((a, b) => a[0].localeCompare(b[0]));
+            
+            state.modalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedWeeks.map(([weekKey]) => {
+                        const date = new Date(weekKey);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [
+                        {
+                            label: 'Hours',
+                            data: sortedWeeks.map(([_, data]) => data.hours - data.correctionHours),
+                            backgroundColor: 'rgba(212, 168, 83, 0.8)',
+                            borderColor: 'rgb(212, 168, 83)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Corrections',
+                            data: sortedWeeks.map(([_, data]) => data.correctionHours),
+                            backgroundColor: 'rgba(249, 115, 22, 0.8)',
+                            borderColor: 'rgb(249, 115, 22)',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'DM Sans' }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b' }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Update modal weeks table
+            elements.modalWeeksBody.innerHTML = sortedWeeks.map(([weekKey, data]) => {
+                const weekStart = new Date(weekKey);
+                const correctionDisplay = data.correctionHours > 0 
+                    ? `<span class="correction-badge">${formatHours(data.correctionHours)} / ${data.correctionUnits}u</span>`
+                    : '<span style="color: var(--text-muted)">—</span>';
+                
+                return `
+                    <tr class="week-row" onclick="showWeekDetail('${weekKey}')">
+                        <td>Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                        <td>${formatWeekRange(weekStart)}</td>
+                        <td>
+                            <span class="hours-badge ${getHoursBadgeClass(data.hours)}">
+                                ${formatHours(data.hours)}
+                            </span>
+                        </td>
+                        <td>${data.units}</td>
+                        <td>${data.sessions}</td>
+                        <td>${correctionDisplay}</td>
+                        <td>
+                            <span class="drill-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            elements.modalOverlay.classList.add('show');
+        }
+
+        function showWeekDetail(weekKey) {
+            if (!state.currentProvider) return;
+            
+            const weekData = state.currentProvider.weeks.get(weekKey);
+            if (!weekData) return;
+            
+            state.currentWeek = weekKey;
+            
+            const weekStart = new Date(weekKey);
+            elements.modalTitle.textContent = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            elements.modalSubtitle.textContent = `${state.currentProvider.name} • ${formatWeekRange(weekStart)}`;
+            elements.modalBack.classList.add('show');
+            elements.providerOverview.classList.add('hidden');
+            elements.weekDetailView.classList.add('show');
+            
+            // Update week detail stats
+            const regularHours = weekData.hours - weekData.correctionHours;
+            const regularUnits = weekData.units - weekData.correctionUnits;
+            
+            elements.weekDetailStats.innerHTML = `
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${formatHours(weekData.hours)}</div>
+                    <div class="modal-stat-label">Total Hours</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${weekData.units}</div>
+                    <div class="modal-stat-label">Total Units</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${weekData.sessions}</div>
+                    <div class="modal-stat-label">Sessions</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value">${formatHours(regularHours)}</div>
+                    <div class="modal-stat-label">Regular Hours</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-value correction">${formatHours(weekData.correctionHours)}</div>
+                    <div class="modal-stat-label">Correction Hours</div>
+                </div>
+            `;
+            
+            // Sort records by date
+            const sortedRecords = [...weekData.records].sort((a, b) => a._date - b._date);
+            
+            // Build records table
+            elements.weekDetailBody.innerHTML = sortedRecords.map(record => {
+                const dateStr = record._date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const beginTime = record[state.columnMap.beginTime] || '-';
+                const endTime = record[state.columnMap.endTime] || '-';
+                const procCode = record[state.columnMap.procCode] || '-';
+                const fundingSource = record[state.columnMap.fundingSource] || '-';
+                const title = record[state.columnMap.title] || '-';
+                
+                const rowClass = record._isCorrection ? 'correction-row' : '';
+                const typeDisplay = record._isCorrection 
+                    ? '<span class="correction-badge">Correction</span>' 
+                    : '<span style="color: var(--text-muted)">Regular</span>';
+                
+                return `
+                    <tr class="${rowClass}">
+                        <td>${dateStr}</td>
+                        <td>${beginTime}</td>
+                        <td>${endTime}</td>
+                        <td>${record._units}</td>
+                        <td>${formatHours(record._hours)}</td>
+                        <td>${procCode}</td>
+                        <td>${fundingSource}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${title}">${title}</td>
+                        <td>${typeDisplay}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function goBackToProviderOverview() {
+            state.currentWeek = null;
+            elements.modalTitle.textContent = state.currentProvider.name;
+            elements.modalSubtitle.textContent = '';
+            elements.modalBack.classList.remove('show');
+            elements.providerOverview.classList.remove('hidden');
+            elements.weekDetailView.classList.remove('show');
+        }
+
+        function exportToExcel() {
+            const workbook = XLSX.utils.book_new();
+            
+            // Summary sheet
+            const summaryData = state.filteredData.map(p => ({
+                'Provider': p.name,
+                'Total Hours': parseFloat(p.totalHours.toFixed(2)),
+                'Total Units': p.totalUnits,
+                'Avg Weekly Hours': parseFloat(p.avgHours.toFixed(2)),
+                'Max Weekly Hours': parseFloat(p.maxHours.toFixed(2)),
+                'Min Weekly Hours': parseFloat(p.minHours.toFixed(2)),
+                'Correction Hours': parseFloat(p.correctionHours.toFixed(2)),
+                'Correction Units': p.correctionUnits,
+                'Weeks Active': p.weeksActive,
+                'Total Sessions': p.sessions,
+                'Trend': p.trend === 'up' ? '↑' : p.trend === 'down' ? '↓' : '→'
+            }));
+            
+            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+            
+            // Set column widths
+            summarySheet['!cols'] = [
+                { wch: 25 }, // Provider
+                { wch: 12 }, // Total Hours
+                { wch: 12 }, // Total Units
+                { wch: 15 }, // Avg Weekly Hours
+                { wch: 15 }, // Max Weekly Hours
+                { wch: 15 }, // Min Weekly Hours
+                { wch: 15 }, // Correction Hours
+                { wch: 15 }, // Correction Units
+                { wch: 12 }, // Weeks Active
+                { wch: 14 }, // Total Sessions
+                { wch: 8 }   // Trend
+            ];
+            
+            XLSX.utils.book_append_sheet(workbook, summarySheet, 'Provider Summary');
+            
+            // Weekly breakdown sheet
+            const weeklyData = [];
+            const allWeeks = Array.from(new Set(
+                state.filteredData.flatMap(p => Array.from(p.weeks.keys()))
+            )).sort();
+            
+            state.filteredData.forEach(provider => {
+                allWeeks.forEach(weekKey => {
+                    const weekData = provider.weeks.get(weekKey);
+                    if (weekData) {
+                        const weekStart = new Date(weekKey);
+                        weeklyData.push({
+                            'Provider': provider.name,
+                            'Week Starting (Sun)': weekStart.toLocaleDateString('en-US'),
+                            'Week Ending (Sat)': getWeekEnd(weekStart).toLocaleDateString('en-US'),
+                            'Hours': parseFloat(weekData.hours.toFixed(2)),
+                            'Units': weekData.units,
+                            'Sessions': weekData.sessions,
+                            'Correction Hours': parseFloat(weekData.correctionHours.toFixed(2)),
+                            'Correction Units': weekData.correctionUnits
+                        });
+                    }
+                });
+            });
+            
+            const weeklySheet = XLSX.utils.json_to_sheet(weeklyData);
+            weeklySheet['!cols'] = [
+                { wch: 25 },
+                { wch: 18 },
+                { wch: 18 },
+                { wch: 10 },
+                { wch: 10 },
+                { wch: 10 },
+                { wch: 15 },
+                { wch: 15 }
+            ];
+            
+            XLSX.utils.book_append_sheet(workbook, weeklySheet, 'Weekly Breakdown');
+            
+            // Stats sheet
+            const totalHours = state.filteredData.reduce((sum, p) => sum + p.totalHours, 0);
+            const totalCorrectionHours = state.filteredData.reduce((sum, p) => sum + p.correctionHours, 0);
+            const avgWeekly = state.filteredData.length > 0 ?
+                state.filteredData.reduce((sum, p) => sum + p.avgHours, 0) / state.filteredData.length : 0;
+            
+            const statsData = [
+                { 'Metric': 'Total Providers', 'Value': state.filteredData.length },
+                { 'Metric': 'Total Hours', 'Value': parseFloat(totalHours.toFixed(2)) },
+                { 'Metric': 'Total Correction Hours', 'Value': parseFloat(totalCorrectionHours.toFixed(2)) },
+                { 'Metric': 'Correction Percentage', 'Value': ((totalCorrectionHours / totalHours) * 100 || 0).toFixed(1) + '%' },
+                { 'Metric': 'Average Weekly Hours (per provider)', 'Value': parseFloat(avgWeekly.toFixed(2)) },
+                { 'Metric': 'Total Weeks Analyzed', 'Value': allWeeks.length },
+                { 'Metric': 'Week Definition', 'Value': 'Sunday - Saturday' },
+                { 'Metric': 'Data Source', 'Value': 'Focus - Billing by Service Date Range' },
+                { 'Metric': 'Report Generated', 'Value': new Date().toLocaleString() },
+                { 'Metric': 'Threshold Applied', 'Value': state.threshold + ' hours' }
+            ];
+            
+            const statsSheet = XLSX.utils.json_to_sheet(statsData);
+            statsSheet['!cols'] = [
+                { wch: 35 },
+                { wch: 30 }
+            ];
+            
+            XLSX.utils.book_append_sheet(workbook, statsSheet, 'Statistics');
+            
+            // Generate filename with date
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Provider_Hours_Analysis_${today}.xlsx`);
+            
+            showToast('Excel file exported successfully', 'success');
+        }
+
+        function resetApplication() {
+            state.rawData = [];
+            state.processedData = [];
+            state.filteredData = [];
+            state.weeks = [];
+            state.providers.clear();
+            state.threshold = 0;
+            state.searchTerm = '';
+            state.currentProvider = null;
+            state.currentWeek = null;
+            
+            elements.fileInfo.classList.remove('show');
+            elements.controlsPanel.classList.remove('show');
+            elements.statsGrid.classList.remove('show');
+            elements.chartSection.classList.remove('show');
+            elements.resultsSection.classList.remove('show');
+            elements.exportBtn.disabled = true;
+            elements.resetBtn.disabled = true;
+            
+            elements.thresholdSlider.value = 0;
+            elements.thresholdValue.textContent = '0h';
+            elements.searchInput.value = '';
+            
+            if (state.mainChart) {
+                state.mainChart.destroy();
+                state.mainChart = null;
+            }
+            
+            showToast('Application reset', 'info');
+        }
+
+        // Event Listeners
+        elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+        
+        elements.uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            elements.uploadArea.classList.add('drag-over');
+        });
+        
+        elements.uploadArea.addEventListener('dragleave', () => {
+            elements.uploadArea.classList.remove('drag-over');
+        });
+        
+        elements.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            elements.uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                elements.fileName.textContent = file.name;
+                elements.fileSize.textContent = formatFileSize(file.size);
+                elements.fileInfo.classList.add('show');
+                processFile(file);
+            } else {
+                showToast('Please upload an Excel file (.xlsx or .xls)', 'error');
+            }
+        });
+        
+        elements.fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                elements.fileName.textContent = file.name;
+                elements.fileSize.textContent = formatFileSize(file.size);
+                elements.fileInfo.classList.add('show');
+                processFile(file);
+            }
+        });
+        
+        elements.thresholdSlider.addEventListener('input', (e) => {
+            state.threshold = parseInt(e.target.value);
+            elements.thresholdValue.textContent = state.threshold + 'h';
+        });
+        
+        elements.thresholdSlider.addEventListener('change', () => {
+            applyFilters();
+        });
+        
+        elements.dateStart.addEventListener('change', (e) => {
+            state.dateStart = e.target.value ? new Date(e.target.value) : null;
+            applyFilters();
+        });
+        
+        elements.dateEnd.addEventListener('change', (e) => {
+            state.dateEnd = e.target.value ? new Date(e.target.value + 'T23:59:59') : null;
+            applyFilters();
+        });
+        
+        elements.sortSelect.addEventListener('change', (e) => {
+            const [field, direction] = e.target.value.split('-');
+            state.currentSort = { field, direction };
+            applyFilters();
+        });
+        
+        elements.searchInput.addEventListener('input', (e) => {
+            state.searchTerm = e.target.value;
+            applyFilters();
+        });
+        
+        document.querySelectorAll('.chart-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                state.chartView = tab.dataset.view;
+                updateChart();
+            });
+        });
+        
+        document.querySelectorAll('#resultsTable th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                const direction = state.currentSort.field === field && state.currentSort.direction === 'desc' ? 'asc' : 'desc';
+                
+                document.querySelectorAll('#resultsTable th').forEach(h => {
+                    h.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                
+                th.classList.add(direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                
+                state.currentSort = { field, direction };
+                applyFilters();
+            });
+        });
+        
+        elements.exportBtn.addEventListener('click', exportToExcel);
+        elements.resetBtn.addEventListener('click', resetApplication);
+        elements.printBtn.addEventListener('click', () => window.print());
+        
+        elements.modalClose.addEventListener('click', () => {
+            elements.modalOverlay.classList.remove('show');
+            state.currentProvider = null;
+            state.currentWeek = null;
+        });
+        
+        elements.modalBack.addEventListener('click', goBackToProviderOverview);
+        
+        elements.modalOverlay.addEventListener('click', (e) => {
+            if (e.target === elements.modalOverlay) {
+                elements.modalOverlay.classList.remove('show');
+                state.currentProvider = null;
+                state.currentWeek = null;
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (state.currentWeek) {
+                    goBackToProviderOverview();
+                } else {
+                    elements.modalOverlay.classList.remove('show');
+                    state.currentProvider = null;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
