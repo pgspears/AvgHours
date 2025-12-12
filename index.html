@@ -1065,11 +1065,31 @@
         }
 
         .correction-row {
-            background: rgba(249, 115, 22, 0.05);
+            background: rgba(249, 115, 22, 0.08);
         }
 
         .correction-row td {
             color: var(--accent-orange);
+        }
+
+        .correction-affected-row {
+            background: rgba(250, 204, 21, 0.08);
+        }
+
+        .correction-affected-row td {
+            color: #eab308;
+        }
+
+        .affected-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(250, 204, 21, 0.15);
+            color: #eab308;
         }
 
         /* Empty State */
@@ -1568,6 +1588,7 @@
                         <table class="records-table">
                             <thead>
                                 <tr>
+                                    <th>Client</th>
                                     <th>Date</th>
                                     <th>Begin Time</th>
                                     <th>End Time</th>
@@ -1576,7 +1597,7 @@
                                     <th>Proc Code</th>
                                     <th>Funding Source</th>
                                     <th>Title</th>
-                                    <th>Type</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="weekDetailBody">
@@ -1722,7 +1743,17 @@
 
         function formatWeekKey(date) {
             const weekStart = getWeekStart(date);
-            return weekStart.toISOString().split('T')[0];
+            // Use local date components to avoid timezone shifts
+            const year = weekStart.getFullYear();
+            const month = String(weekStart.getMonth() + 1).padStart(2, '0');
+            const day = String(weekStart.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function parseWeekKey(weekKey) {
+            // Parse the week key back to a local date (avoids UTC interpretation)
+            const [year, month, day] = weekKey.split('-').map(Number);
+            return new Date(year, month - 1, day);
         }
 
         function getInitials(name) {
@@ -1837,6 +1868,7 @@
             const endTimeCol = findColumn(sampleRow, ['End Time', 'EndTime']);
             const procCodeCol = findColumn(sampleRow, ['ProcCode', 'Proc Code', 'Procedure Code']);
             const fundingSourceCol = findColumn(sampleRow, ['Funding Source', 'FundingSource']);
+            const clientCol = findColumn(sampleRow, ['FullName', 'Full Name', 'Client', 'Client Name', 'Patient', 'Name']);
             
             // Store column map for later use
             state.columnMap = {
@@ -1847,20 +1879,40 @@
                 beginTime: beginTimeCol,
                 endTime: endTimeCol,
                 procCode: procCodeCol,
-                fundingSource: fundingSourceCol
+                fundingSource: fundingSourceCol,
+                client: clientCol
             };
+            
+            // First pass: identify all correction keys (client + date + provider combos that have corrections)
+            const correctionKeys = new Set();
+            state.rawData.forEach(row => {
+                const title = titleCol ? (row[titleCol] || '').toString() : '';
+                if (isCorrection(title)) {
+                    const dateValue = row[dateCol];
+                    const provider = (row[providerCol] || '').toString().trim();
+                    const client = clientCol ? (row[clientCol] || '').toString().trim() : '';
+                    const date = parseDate(dateValue);
+                    if (date && provider) {
+                        // Create a unique key for this client+date+provider combination
+                        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const correctionKey = `${client}|${dateStr}|${provider}`;
+                        correctionKeys.add(correctionKey);
+                    }
+                }
+            });
             
             if (!dateCol || !unitsCol || !providerCol) {
                 showToast('Could not find required columns. Need: Begin Date, Total Units, Created By', 'error');
                 return;
             }
             
-            // Process each record
+            // Second pass: process each record
             state.rawData.forEach((row, index) => {
                 const dateValue = row[dateCol];
                 const units = parseFloat(row[unitsCol]) || 0;
                 const provider = (row[providerCol] || '').toString().trim();
                 const title = titleCol ? (row[titleCol] || '').toString() : '';
+                const client = clientCol ? (row[clientCol] || '').toString().trim() : '';
                 
                 if (!provider || !dateValue) return;
                 
@@ -1870,6 +1922,11 @@
                 const weekKey = formatWeekKey(date);
                 const hours = units * 0.25; // 15 minutes per unit
                 const isCorrectionRecord = isCorrection(title);
+                
+                // Check if this record's client+date+provider combo has any corrections
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const recordKey = `${client}|${dateStr}|${provider}`;
+                const hasRelatedCorrection = correctionKeys.has(recordKey);
                 
                 weekSet.add(weekKey);
                 
@@ -1919,7 +1976,9 @@
                     _date: date,
                     _hours: hours,
                     _units: units,
-                    _isCorrection: isCorrectionRecord
+                    _isCorrection: isCorrectionRecord,
+                    _hasRelatedCorrection: hasRelatedCorrection,
+                    _client: client
                 });
                 
                 providerData.totalHours += hours;
@@ -1932,6 +1991,8 @@
                     _hours: hours,
                     _units: units,
                     _isCorrection: isCorrectionRecord,
+                    _hasRelatedCorrection: hasRelatedCorrection,
+                    _client: client,
                     _weekKey: weekKey
                 });
             });
@@ -1974,8 +2035,8 @@
             
             // Set date range for filters
             if (state.weeks.length > 0) {
-                const minDate = new Date(state.weeks[0]);
-                const maxDate = getWeekEnd(new Date(state.weeks[state.weeks.length - 1]));
+                const minDate = parseWeekKey(state.weeks[0]);
+                const maxDate = getWeekEnd(parseWeekKey(state.weeks[state.weeks.length - 1]));
                 elements.dateStart.value = minDate.toISOString().split('T')[0];
                 elements.dateEnd.value = maxDate.toISOString().split('T')[0];
                 state.dateStart = minDate;
@@ -2004,7 +2065,7 @@
                     let correctionUnits = 0;
                     
                     provider.weeks.forEach((weekData, weekKey) => {
-                        const weekStart = new Date(weekKey);
+                        const weekStart = parseWeekKey(weekKey);
                         const weekEnd = getWeekEnd(weekStart);
                         
                         if (weekStart >= state.dateStart && weekEnd <= state.dateEnd) {
@@ -2112,8 +2173,8 @@
             if (state.weeks.length > 0) {
                 const sortedFilteredWeeks = Array.from(filteredWeeks).sort();
                 if (sortedFilteredWeeks.length > 0) {
-                    const startDate = new Date(sortedFilteredWeeks[0]);
-                    const endDate = getWeekEnd(new Date(sortedFilteredWeeks[sortedFilteredWeeks.length - 1]));
+                    const startDate = parseWeekKey(sortedFilteredWeeks[0]);
+                    const endDate = getWeekEnd(parseWeekKey(sortedFilteredWeeks[sortedFilteredWeeks.length - 1]));
                     document.getElementById('statDateRange').textContent = 
                         `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
                 }
@@ -2222,7 +2283,7 @@
                 
                 chartData = {
                     labels: sortedWeeks.map(w => {
-                        const date = new Date(w);
+                        const date = parseWeekKey(w);
                         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     }),
                     datasets: [
@@ -2393,7 +2454,7 @@
                 type: 'bar',
                 data: {
                     labels: sortedWeeks.map(([weekKey]) => {
-                        const date = new Date(weekKey);
+                        const date = parseWeekKey(weekKey);
                         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     }),
                     datasets: [
@@ -2445,7 +2506,7 @@
             
             // Update modal weeks table
             elements.modalWeeksBody.innerHTML = sortedWeeks.map(([weekKey, data]) => {
-                const weekStart = new Date(weekKey);
+                const weekStart = parseWeekKey(weekKey);
                 const correctionDisplay = data.correctionHours > 0 
                     ? `<span class="correction-badge">${formatHours(data.correctionHours)} / ${data.correctionUnits}u</span>`
                     : '<span style="color: var(--text-muted)">—</span>';
@@ -2484,7 +2545,7 @@
             
             state.currentWeek = weekKey;
             
-            const weekStart = new Date(weekKey);
+            const weekStart = parseWeekKey(weekKey);
             elements.modalTitle.textContent = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
             elements.modalSubtitle.textContent = `${state.currentProvider.name} • ${formatWeekRange(weekStart)}`;
             elements.modalBack.classList.add('show');
@@ -2494,6 +2555,10 @@
             // Update week detail stats
             const regularHours = weekData.hours - weekData.correctionHours;
             const regularUnits = weekData.units - weekData.correctionUnits;
+            
+            // Count affected records (not corrections themselves, but related to corrections)
+            const affectedRecords = weekData.records.filter(r => r._hasRelatedCorrection && !r._isCorrection).length;
+            const correctionRecords = weekData.records.filter(r => r._isCorrection).length;
             
             elements.weekDetailStats.innerHTML = `
                 <div class="modal-stat">
@@ -2509,17 +2574,22 @@
                     <div class="modal-stat-label">Sessions</div>
                 </div>
                 <div class="modal-stat">
-                    <div class="modal-stat-value">${formatHours(regularHours)}</div>
-                    <div class="modal-stat-label">Regular Hours</div>
+                    <div class="modal-stat-value correction">${correctionRecords}</div>
+                    <div class="modal-stat-label">Corrections</div>
                 </div>
                 <div class="modal-stat">
-                    <div class="modal-stat-value correction">${formatHours(weekData.correctionHours)}</div>
-                    <div class="modal-stat-label">Correction Hours</div>
+                    <div class="modal-stat-value" style="color: #eab308;">${affectedRecords}</div>
+                    <div class="modal-stat-label">Affected Records</div>
                 </div>
             `;
             
             // Sort records by date
-            const sortedRecords = [...weekData.records].sort((a, b) => a._date - b._date);
+            const sortedRecords = [...weekData.records].sort((a, b) => {
+                // Sort by client, then date
+                const clientCompare = (a._client || '').localeCompare(b._client || '');
+                if (clientCompare !== 0) return clientCompare;
+                return a._date - b._date;
+            });
             
             // Build records table
             elements.weekDetailBody.innerHTML = sortedRecords.map(record => {
@@ -2529,14 +2599,23 @@
                 const procCode = record[state.columnMap.procCode] || '-';
                 const fundingSource = record[state.columnMap.fundingSource] || '-';
                 const title = record[state.columnMap.title] || '-';
+                const client = record._client || '-';
                 
-                const rowClass = record._isCorrection ? 'correction-row' : '';
-                const typeDisplay = record._isCorrection 
-                    ? '<span class="correction-badge">Correction</span>' 
-                    : '<span style="color: var(--text-muted)">Regular</span>';
+                // Determine row class and status display
+                let rowClass = '';
+                let statusDisplay = '<span style="color: var(--text-muted)">Regular</span>';
+                
+                if (record._isCorrection) {
+                    rowClass = 'correction-row';
+                    statusDisplay = '<span class="correction-badge">Correction</span>';
+                } else if (record._hasRelatedCorrection) {
+                    rowClass = 'correction-affected-row';
+                    statusDisplay = '<span class="affected-badge">Affected</span>';
+                }
                 
                 return `
                     <tr class="${rowClass}">
+                        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${client}">${client}</td>
                         <td>${dateStr}</td>
                         <td>${beginTime}</td>
                         <td>${endTime}</td>
@@ -2544,8 +2623,8 @@
                         <td>${formatHours(record._hours)}</td>
                         <td>${procCode}</td>
                         <td>${fundingSource}</td>
-                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${title}">${title}</td>
-                        <td>${typeDisplay}</td>
+                        <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${title}">${title}</td>
+                        <td>${statusDisplay}</td>
                     </tr>
                 `;
             }).join('');
@@ -2607,7 +2686,7 @@
                 allWeeks.forEach(weekKey => {
                     const weekData = provider.weeks.get(weekKey);
                     if (weekData) {
-                        const weekStart = new Date(weekKey);
+                        const weekStart = parseWeekKey(weekKey);
                         weeklyData.push({
                             'Provider': provider.name,
                             'Week Starting (Sun)': weekStart.toLocaleDateString('en-US'),
